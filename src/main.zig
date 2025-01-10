@@ -82,6 +82,13 @@ pub fn main() !void {
 
     var timekeeper: Timekeeper = .{ .tocks_per_s = c.SDL_GetPerformanceFrequency() };
 
+    // var general_purpose_allocator = std.heap.GeneralPurposeAllocator(.{}).init;
+    // defer _ = general_purpose_allocator.deinit();
+    // const gpa = general_purpose_allocator.allocator();
+
+    // var k = try std.math.big.int.Managed.init(gpa);
+    // try k.ensureTwosCompCapacity(2048); // Need ~1803 bits to do the original Tupper's Self-Referential Formula
+
     main_loop: while (true) {
         // Process SDL events
         {
@@ -125,15 +132,31 @@ pub fn main() !void {
 
         // Draw
         {
-            // TODO: Display a colored square
             try errify(c.SDL_SetRenderDrawColor(renderer, 0, 0, 0, c.SDL_ALPHA_OPAQUE));
-
             try errify(c.SDL_RenderClear(renderer));
 
             {
-                try errify(c.SDL_SetRenderDrawColor(renderer, 128, 30, 255, c.SDL_ALPHA_OPAQUE));
-                const sample_square = c.SDL_FRect{ .h = 100, .w = 100, .x = window_w / 2, .y = window_h / 2 };
-                try errify(c.SDL_RenderFillRect(renderer, &sample_square));
+                try errify(c.SDL_SetRenderDrawColor(renderer, 230, 230, 230, c.SDL_ALPHA_OPAQUE));
+                const padding = 50;
+                // X-axis & Y-axis
+                const x_axis_end = c.SDL_FPoint{ .x = window_w - padding, .y = window_h - padding };
+                const x_arrow = [3]c.SDL_Vertex{
+                    .{ .color = .{ .r = 1.0, .g = 1.0, .b = 1.0, .a = 1.0 }, .position = .{ .x = x_axis_end.x, .y = x_axis_end.y - 10 } },
+                    .{ .color = .{ .r = 1.0, .g = 1.0, .b = 1.0, .a = 1.0 }, .position = .{ .x = x_axis_end.x, .y = x_axis_end.y + 10 } },
+                    .{ .color = .{ .r = 1.0, .g = 1.0, .b = 1.0, .a = 1.0 }, .position = .{ .x = x_axis_end.x + 20.0 / std.math.sqrt2, .y = x_axis_end.y } },
+                };
+
+                const y_axis_end = c.SDL_FPoint{ .x = padding, .y = padding };
+                const y_arrow = [3]c.SDL_Vertex{
+                    .{ .color = .{ .r = 1.0, .g = 1.0, .b = 1.0, .a = 1.0 }, .position = .{ .x = y_axis_end.x - 10, .y = y_axis_end.y } },
+                    .{ .color = .{ .r = 1.0, .g = 1.0, .b = 1.0, .a = 1.0 }, .position = .{ .x = y_axis_end.x + 10, .y = y_axis_end.y } },
+                    .{ .color = .{ .r = 1.0, .g = 1.0, .b = 1.0, .a = 1.0 }, .position = .{ .x = y_axis_end.x, .y = y_axis_end.y - 20.0 / std.math.sqrt2 } },
+                };
+
+                try errify(c.SDL_RenderLine(renderer, padding, window_h - padding, x_axis_end.x, x_axis_end.y));
+                try errify(c.SDL_RenderGeometry(renderer, null, &x_arrow, x_arrow.len, null, 0));
+                try errify(c.SDL_RenderLine(renderer, padding, window_h - padding, y_axis_end.x, y_axis_end.y));
+                try errify(c.SDL_RenderGeometry(renderer, null, &y_arrow, y_arrow.len, null, 0));
             }
 
             try errify(c.SDL_RenderPresent(renderer));
